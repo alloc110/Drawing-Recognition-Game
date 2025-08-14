@@ -80,17 +80,12 @@ while cap.isOpened():  # while the webcam is opened
         continue
     h, w, _ = img.shape  # get the dimensions of our image
 
-    empty_img = 255 * np.ones((h, w, 3), np.uint8)  # create an empty white image with the size of our frame
 
     img = cv2.flip(img, 1)  # the frame is mirrored so we flip it
-    for color in Color_Circle:  # display the color palette
-        # print(color)
-        cv2.circle(img, Color_Circle[color]["Center"],
-                   Color_Circle[color]["Radius"],
-                   Color_Circle[color]["Color"], -1)
-        cv2.circle(empty_img, Color_Circle[color]["Center"],
-                   Color_Circle[color]["Radius"],
-                   Color_Circle[color]["Color"], -1)
+
+    cv2.circle(img, Color_Circle["Black"]["Center"],
+                Color_Circle["Black"]["Radius"],
+                Color_Circle["Black"]["Color"], -1)
 
     RGB_img = cv2.cvtColor(img,
                            cv2.COLOR_BGR2RGB)  # convert the frame from BGR to RGB in order to process it correctly with mediapipe
@@ -100,62 +95,45 @@ while cap.isOpened():  # while the webcam is opened
     if results.multi_hand_landmarks:  # if a hand is detected
         for handlm in results.multi_hand_landmarks:
             for id, lm in enumerate(handlm.landmark):
-                # print(handlm.landmark)
+
                 lm_pos = (int(lm.x * w), int(lm.y * h))  # get landmarks positions
                 mp_draw.draw_landmarks(img, handlm, mp_hands.HAND_CONNECTIONS)  # draw the landmarks
                 if (id % 4 == 0):  # if a landmark is a fingertip ( 0,4,8,12,16,20)
                     tips_pts = np.append(tips_pts, lm_pos)  # append fingertips coordinates to tips_pts array
                     tips_pts = tips_pts.reshape((-1, 1, 2))
-                    # print(len(tips_pts))
 
                     while (len(tips_pts) >= 5):  # keep array length constant = 5
                         tips_pts = np.delete(tips_pts, len(tips_pts) - 5, 0)
+
                 if id == 8:  # if we detect the index finger tip
                     cv2.circle(img, lm_pos, 6, (255, 255, 255), -1)
-                    for color in Color_Circle:  # calculate the distance between the index finger tip and each color in tha palette
-                        Color_Circle[color]["Distance"] = distance(lm_pos, Color_Circle[color]["Center"])
-                        cv2.line(img, lm_pos, Color_Circle[color]["Center"], Color_Circle[color]["Color"], 3)
-                        cv2.putText(img, str(Color_Circle[color]["Distance"]), Color_Circle[color]["Center"],
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
-                        if Color_Circle[color][
-                            "Distance"] < 35:  # if the index is close enough to a color then this color becomes selected or "active"
-                            for i in Color_Circle:
-                                Color_Circle[i]["is Active"] = False  # deactivate unselected colors
+                    Color_Circle["Black"]["Distance"] = distance(lm_pos, Color_Circle["Black"]["Center"])
 
-                            Color_Circle[color]["is Active"] = True
+                    # cv2.line(img, lm_pos, Color_Circle[color]["Center"], Color_Circle[color]["Color"], 3)
+                    # cv2.putText(img, str(Color_Circle[color]["Distance"]), Color_Circle[color]["Center"],cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
 
-                        if Color_Circle[color]["is Active"] == True:
-                            cv2.circle(empty_img, lm_pos, 8, Color_Circle[color]["Color"], -1)
+                    Color_Circle["Black"]["is Active"] = True
 
-                            if (Is_in_Draw_Position(handlm.landmark, w, h)):  # if we are in draw position
-                                # print(Is_in_Draw_Position(handlm.landmark, w, h))
-                                is_Draw_curr_Frame = True  # if we are currently drawing
-                                # print(" is_Draw_curr_Frame", is_Draw_curr_Frame, "is_Draw_prev_Frame",
-                                #       is_Draw_prev_Frame)
-                                if (is_Draw_prev_Frame == False) and (
-                                        is_Draw_curr_Frame == True):  # if we just started a drawing sequence
-                                    Color_Circle[color]["Drawing"].append(
-                                        np.array([[]], np.int32))  # append drawing coordinates in a numpy array
+                    if Color_Circle["Black"]["is Active"] == True:
 
-                                Color_Circle[color]["Drawing"][len(Color_Circle[color]["Drawing"]) - 1] = \
-                                    np.append(
-                                        Color_Circle[color]["Drawing"][len(Color_Circle[color]["Drawing"]) - 1],
-                                        lm_pos)
-                                # print(Color_Circle[color]["Drawing"])
+                        if (Is_in_Draw_Position(handlm.landmark, w, h)):  # if we are in draw position
+                            is_Draw_curr_Frame = True  # if we are currently drawing
+                            if (is_Draw_prev_Frame == False) and (is_Draw_curr_Frame == True):  # if we just started a drawing sequence
+                                Color_Circle["Black"]["Drawing"].append(np.array([[]], np.int32))  # append drawing coordinates in a numpy array
 
-                                Color_Circle[color]["Drawing"][len(Color_Circle[color]["Drawing"]) - 1] = \
-                                    Color_Circle[color]["Drawing"][len(Color_Circle[color]["Drawing"]) - 1].reshape(
-                                        (-1, 1, 2))
+                            Color_Circle["Black"]["Drawing"][len(Color_Circle["Black"]["Drawing"]) - 1] = \
+                                np.append(
+                                    Color_Circle["Black"]["Drawing"][len(Color_Circle["Black"]["Drawing"]) - 1],
+                                    lm_pos)
 
-                            else:
-                                # print(Is_in_Draw_Position(handlm.landmark, w, h))
-                                is_Draw_curr_Frame = False
+                            Color_Circle["Black"]["Drawing"][len(Color_Circle["Black"]["Drawing"]) - 1] = \
+                                Color_Circle["Black"]["Drawing"][len(Color_Circle["Black"]["Drawing"]) - 1].reshape(
+                                    (-1, 1, 2))
 
-                            is_Draw_prev_Frame = is_Draw_curr_Frame
-                            # print(" *** is_Draw_curr_Frame", is_Draw_curr_Frame, "is_Draw_prev_Frame",
-                            #       is_Draw_prev_Frame)
+                        else:
+                            is_Draw_curr_Frame = False
 
-                            print(len(Color_Circle[color]["Drawing"]))
+                        is_Draw_prev_Frame = is_Draw_curr_Frame
 
                 Box_corner1, Box_corner2 = Bounding_box_coords(handlm.landmark)
 
@@ -166,7 +144,7 @@ while cap.isOpened():  # while the webcam is opened
 
     for color in Color_Circle:  # display our drawing
         for i in range(0, len(Color_Circle[color]["Drawing"])):
-            cv2.polylines(empty_img, [Color_Circle[color]["Drawing"][i]], False, Color_Circle[color]["Color"], 5)
+            cv2.polylines(img, [Color_Circle[color]["Drawing"][i]], False, Color_Circle[color]["Color"], 5)
 
     curr_frame_time = time.time()
     delta_time = curr_frame_time - prev_frame_time
@@ -174,7 +152,6 @@ while cap.isOpened():  # while the webcam is opened
     prev_frame_time = curr_frame_time
     cv2.putText(img, "FPS : " + str(fps), (int(0.01 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
     cv2.imshow("final img", img)
-    cv2.imshow("empty img", empty_img)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):  # "q" to quit
         break
