@@ -4,6 +4,11 @@ import random
 import mediapipe as mp
 import math
 import numpy as np
+import torch
+import torchvision.transforms as transforms
+from matplotlib import pyplot as plt
+
+from model import ClassificationCNN
 
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
@@ -27,7 +32,7 @@ Color_Circle = {
       "Distance": 300}
 }
 
-
+is_draw = False
  #this function creates a bounding box around the hand
  #it takes as an argument the landmarks (0 ,4 , 8 , 12 ,16 , 20 represent the finger tips)
 def Bounding_box_coords(lms):
@@ -71,7 +76,28 @@ def Is_in_Draw_Position(handlms, w, h):
   if final_d < 1:
       return True
   return False
+categories = ['apple',
+                      'bird',
+                      'bread',
+                      'cake',
+                      'car',
+                      'elephant',
+                      'fish',
+                      'hat',
+                      'lion',
+                      'monkey',
+                      'rabbit'
+                      ]
 
+transforms = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize(0.5, 0.5)]
+)
+path_model = 'model/last_model.pt'
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = ClassificationCNN()
+model.load_state_dict(torch.load(path_model, weights_only=True))
+model = model.to(device)
 
 cap = cv2.VideoCapture(0)  # we set our pc webcam as our input
 while cap.isOpened():  # while the webcam is opened
@@ -82,11 +108,11 @@ while cap.isOpened():  # while the webcam is opened
 
 
     img = cv2.flip(img, 1)  # the frame is mirrored so we flip it
-
+    img_hide = np.zeros((h, w, 1), dtype = np.uint8)
     cv2.circle(img, Color_Circle["Black"]["Center"],
                 Color_Circle["Black"]["Radius"],
                 Color_Circle["Black"]["Color"], -1)
-
+    # img_hide[:] = 255
     RGB_img = cv2.cvtColor(img,
                            cv2.COLOR_BGR2RGB)  # convert the frame from BGR to RGB in order to process it correctly with mediapipe
     results = hands.process(
@@ -142,17 +168,30 @@ while cap.isOpened():  # while the webcam is opened
                 # cv2.circle(img,Box_center,1 ,(255,0,0),2)
                 cv2.polylines(img, [tips_pts], False, (255, 0, 255), 2)  # draw a polygone around the hand
 
-    for color in Color_Circle:  # display our drawing
-        for i in range(0, len(Color_Circle[color]["Drawing"])):
-            cv2.polylines(img, [Color_Circle[color]["Drawing"][i]], False, Color_Circle[color]["Color"], 5)
+    for i in range(0, len(Color_Circle['Black']["Drawing"])):
+        cv2.polylines(img, [Color_Circle['Black']["Drawing"][i]], False, Color_Circle['Black']["Color"], 5)
+        cv2.polylines(img_hide, [Color_Circle['Black']["Drawing"][i]], False, 255, 15)
+
 
     curr_frame_time = time.time()
     delta_time = curr_frame_time - prev_frame_time
     fps = int(1 / delta_time)
     prev_frame_time = curr_frame_time
-    cv2.putText(img, "FPS : " + str(fps), (int(0.01 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
-    cv2.imshow("final img", img)
+    # cv2.putText(img, "FPS : " + str(fps), (int(0.01 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
 
+    if len(Color_Circle['Black']["Drawing"]) != 1:
+        image_resize = cv2.resize(img_hide, (28,28))
+        # plt.imshow(image_resize)
+        # plt.savefig("test.png")
+        image_resize = transforms(image_resize)
+        image_resize = image_resize.to(device)
+        image_resize = image_resize.unsqueeze(0)
+        outputs = model(image_resize)
+        _, predictions = torch.max(outputs, 1)
+        # print(categories[predictions])
+        cv2.putText(img, str(categories[predictions]), (int(0.1 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
+        # cv2.imshow("final img", img)
+    cv2.imshow("final image", img)
     if cv2.waitKey(1) & 0xFF == ord("q"):  # "q" to quit
         break
     elif cv2.waitKey(1) & 0xFF == ord("c"):  # "c" to clear drawing

@@ -23,7 +23,8 @@ categories = ['apple',
                       'monkey',
                       'rabbit'
                       ]
-
+image , label = data.__getitem__(3)
+print(type(image))
 transforms = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize(0.5, 0.5)]
@@ -54,7 +55,7 @@ for epoch in range(NUM_EPOCHS):
         labels = labels.to(device)
         # zero the parameter gradients
         optimizer.zero_grad()
-
+        print(inputs.shape)
         # forward + backward + optimize
         outputs = model(inputs)
         loss = criterion(outputs, labels)
@@ -71,7 +72,7 @@ for epoch in range(NUM_EPOCHS):
     if(running_loss < min_loss):
         min_loss = running_loss
         torch.save(model.state_dict(), 'model/best_model.pt')
-writer.flush()
-writer.close()
-
-print('Finished Training')
+# writer.flush()
+# writer.close()
+#
+# print('Finished Training')
