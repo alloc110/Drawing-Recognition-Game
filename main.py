@@ -181,8 +181,8 @@ while cap.isOpened():  # while the webcam is opened
 
     if len(Color_Circle['Black']["Drawing"]) != 1:
         image_resize = cv2.resize(img_hide, (28,28))
-        # plt.imshow(image_resize)
-        # plt.savefig("test.png")
+        plt.imshow(image_resize)
+        plt.savefig("test.png")
         image_resize = transforms(image_resize)
         image_resize = image_resize.to(device)
         image_resize = image_resize.unsqueeze(0)
@@ -192,6 +192,7 @@ while cap.isOpened():  # while the webcam is opened
         cv2.putText(img, str(categories[predictions]), (int(0.1 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
         # cv2.imshow("final img", img)
     cv2.imshow("final image", img)
+    cv2.imshow("hidden image", img_hide)
     if cv2.waitKey(1) & 0xFF == ord("q"):  # "q" to quit
         break
     elif cv2.waitKey(1) & 0xFF == ord("c"):  # "c" to clear drawing
