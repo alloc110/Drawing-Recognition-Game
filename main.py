@@ -77,18 +77,17 @@ def Is_in_Draw_Position(handlms, w, h):
       return True
   return False
 categories = ['apple',
-                      'bird',
-                      'bread',
-                      'cake',
-                      'car',
-                      'elephant',
-                      'fish',
-                      'hat',
-                      'lion',
-                      'monkey',
-                      'rabbit'
-                      ]
-
+          'cake',
+          'rabbit',
+          'fish',
+          'bread',
+          'monkey',
+          'hat',
+          'elephant',
+          'bird',
+          'lion',
+          'car'
+          ]
 transforms = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize(0.5, 0.5)]
@@ -96,7 +95,8 @@ transforms = transforms.Compose(
 path_model = 'model/last_model.pt'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = ClassificationCNN()
-model.load_state_dict(torch.load(path_model, weights_only=True))
+checkpoint = torch.load("model/best_model.pth5", weights_only = True)
+model.load_state_dict(checkpoint['model_state_dict'])
 model = model.to(device)
 
 cap = cv2.VideoCapture(0)  # we set our pc webcam as our input
@@ -181,18 +181,18 @@ while cap.isOpened():  # while the webcam is opened
 
     if len(Color_Circle['Black']["Drawing"]) != 1:
         image_resize = cv2.resize(img_hide, (28,28))
-        plt.imshow(image_resize)
-        plt.savefig("test.png")
+        # plt.imshow(image_resize)
+        # plt.savefig("test.png")
         image_resize = transforms(image_resize)
         image_resize = image_resize.to(device)
         image_resize = image_resize.unsqueeze(0)
         outputs = model(image_resize)
         _, predictions = torch.max(outputs, 1)
         # print(categories[predictions])
-        cv2.putText(img, str(categories[predictions]), (int(0.1 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
+        cv2.putText(img, str(categories[predictions]), (int(0.7 * w), int(0.7 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 4)
         # cv2.imshow("final img", img)
     cv2.imshow("final image", img)
-    cv2.imshow("hidden image", img_hide)
+    # cv2.imshow("hidden image", img_hide)
     if cv2.waitKey(1) & 0xFF == ord("q"):  # "q" to quit
         break
     elif cv2.waitKey(1) & 0xFF == ord("c"):  # "c" to clear drawing
