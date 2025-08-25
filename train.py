@@ -31,7 +31,7 @@ classes = ['apple',
 
 data_train = Mydataset('dataset',is_train= True, transforms = transforms)
 
-batch_size = 3000
+batch_size = 6000
 trainloader = DataLoader(data_train, batch_size=batch_size,
                                       shuffle=True, num_workers=8)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -60,7 +60,7 @@ total_pred = {classname: 0 for classname in classes}
 
 
 min_loss = float("inf")
-NUM_EPOCHS  = 100
+NUM_EPOCHS  = 200
 for epoch in range(start_epoch, NUM_EPOCHS):
     running_loss = 0.0
     for i, data in enumerate(tqdm(trainloader,  desc=f"Epoch {epoch + 1}/{NUM_EPOCHS}")):
@@ -98,38 +98,38 @@ for epoch in range(start_epoch, NUM_EPOCHS):
         torch.save(checkpoint, 'model/best_model.pth5')
     running_loss = 0.0
 
-    with torch.no_grad():
-        for data in testloader:
-            images, labels = data
-            # calculate outputs by running images through the network
-            images = images.to(device)
-            total += 1
-            labels = torch.from_numpy(np.array(labels))
-            labels = labels.to(device)
-
-            outputs = model(images)
-            # the class with the highest energy is what we choose as prediction
-            loss = criterion(outputs, labels)
-            _, predicted = torch.max(outputs, 1)
-            running_loss += loss.item()
-            writer.add_scalar("Loss/test", running_loss, epoch)
-    running_loss = 0
-    for data in testloader:
-        images, labels = data
-        # calculate outputs by running images through the network
-        images = images.to(device)
-        total += 1
-        labels = torch.from_numpy(np.array(labels))
-        labels = labels.to(device)
-
-        outputs = model(images)
-        # the class with the highest energy is what we choose as prediction
-        total += labels.size(0)
-        _, predicted = torch.max(outputs, 1)
-        for label, prediction in zip(labels, predicted):
-            if label == prediction:
-                correct_pred[classes[label]] += 1
-            total_pred[classes[label]] += 1
+    # with torch.no_grad():
+    #     for data in testloader:
+    #         images, labels = data
+    #         # calculate outputs by running images through the network
+    #         images = images.to(device)
+    #         total += 1
+    #         labels = torch.from_numpy(np.array(labels))
+    #         labels = labels.to(device)
+    #
+    #         outputs = model(images)
+    #         # the class with the highest energy is what we choose as prediction
+    #         loss = criterion(outputs, labels)
+    #         _, predicted = torch.max(outputs, 1)
+    #         running_loss += loss.item()
+    #         writer.add_scalar("Loss/test", running_loss, epoch)
+    # running_loss = 0
+    # for data in testloader:
+    #     images, labels = data
+    #     # calculate outputs by running images through the network
+    #     images = images.to(device)
+    #     total += 1
+    #     labels = torch.from_numpy(np.array(labels))
+    #     labels = labels.to(device)
+    #
+    #     outputs = model(images)
+    #     # the class with the highest energy is what we choose as prediction
+    #     total += labels.size(0)
+    #     _, predicted = torch.max(outputs, 1)
+    #     for label, prediction in zip(labels, predicted):
+    #         if label == prediction:
+    #             correct_pred[classes[label]] += 1
+    #         total_pred[classes[label]] += 1
 writer.flush()
 writer.close()
 

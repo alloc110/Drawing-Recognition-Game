@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from dataset import Mydataset
 from model import ClassificationCNN
+import seaborn as sns
 
 path_model = 'model/last_model.pt'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,4 +63,7 @@ for i in table:
 # image, label = data_test.__getitem__(4)
 # plt.imshow(image)
 # print(classes[label])
+# plt.show()
+
+# sns.heatmap(table)
 # plt.show()
