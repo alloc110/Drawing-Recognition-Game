@@ -76,6 +76,7 @@ def Is_in_Draw_Position(handlms, w, h):
   if final_d < 1:
       return True
   return False
+
 categories = ['apple',
           'cake',
           'rabbit',
@@ -88,42 +89,58 @@ categories = ['apple',
           'lion',
           'car'
           ]
+
 transforms = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize(0.5, 0.5)]
 )
+
 path_model = 'model/last_model.pt'
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 model = ClassificationCNN()
-checkpoint = torch.load("model/best_model.pth5", weights_only = True)
+
+checkpoint = torch.load("model/last_model.pth5", weights_only = True)
+
 model.load_state_dict(checkpoint['model_state_dict'])
+
 model = model.to(device)
 
 cap = cv2.VideoCapture(0)  # we set our pc webcam as our input
 while cap.isOpened():  # while the webcam is opened
+
     ok, img = cap.read()  # capture images
+
     if not ok:
         continue
-    h, w, _ = img.shape  # get the dimensions of our image
 
+    h, w, _ = img.shape  # get the dimensions of our image
 
     img = cv2.flip(img, 1)  # the frame is mirrored so we flip it
     img_hide = np.zeros((h, w, 1), dtype = np.uint8)
-    cv2.circle(img, Color_Circle["Black"]["Center"],
-                Color_Circle["Black"]["Radius"],
-                Color_Circle["Black"]["Color"], -1)
+
+    # cv2.circle(img, Color_Circle["Black"]["Center"],
+    #             Color_Circle["Black"]["Radius"],
+    #             Color_Circle["Black"]["Color"], -1)
+
     # img_hide[:] = 255
     RGB_img = cv2.cvtColor(img,
                            cv2.COLOR_BGR2RGB)  # convert the frame from BGR to RGB in order to process it correctly with mediapipe
+
     results = hands.process(
         RGB_img)  # launch the detection and tracking process on our img and store the results in "results"
 
     if results.multi_hand_landmarks:  # if a hand is detected
+
         for handlm in results.multi_hand_landmarks:
+
             for id, lm in enumerate(handlm.landmark):
 
                 lm_pos = (int(lm.x * w), int(lm.y * h))  # get landmarks positions
+
                 mp_draw.draw_landmarks(img, handlm, mp_hands.HAND_CONNECTIONS)  # draw the landmarks
+
                 if (id % 4 == 0):  # if a landmark is a fingertip ( 0,4,8,12,16,20)
                     tips_pts = np.append(tips_pts, lm_pos)  # append fingertips coordinates to tips_pts array
                     tips_pts = tips_pts.reshape((-1, 1, 2))
@@ -143,7 +160,9 @@ while cap.isOpened():  # while the webcam is opened
                     if Color_Circle["Black"]["is Active"] == True:
 
                         if (Is_in_Draw_Position(handlm.landmark, w, h)):  # if we are in draw position
+
                             is_Draw_curr_Frame = True  # if we are currently drawing
+
                             if (is_Draw_prev_Frame == False) and (is_Draw_curr_Frame == True):  # if we just started a drawing sequence
                                 Color_Circle["Black"]["Drawing"].append(np.array([[]], np.int32))  # append drawing coordinates in a numpy array
 
@@ -157,6 +176,7 @@ while cap.isOpened():  # while the webcam is opened
                                     (-1, 1, 2))
 
                         else:
+
                             is_Draw_curr_Frame = False
 
                         is_Draw_prev_Frame = is_Draw_curr_Frame
@@ -169,31 +189,46 @@ while cap.isOpened():  # while the webcam is opened
                 cv2.polylines(img, [tips_pts], False, (255, 0, 255), 2)  # draw a polygone around the hand
 
     for i in range(0, len(Color_Circle['Black']["Drawing"])):
-        cv2.polylines(img, [Color_Circle['Black']["Drawing"][i]], False, Color_Circle['Black']["Color"], 5)
-        cv2.polylines(img_hide, [Color_Circle['Black']["Drawing"][i]], False, 255, 15)
 
+        cv2.polylines(img, [Color_Circle['Black']["Drawing"][i]], False, Color_Circle['Black']["Color"], 5)
+        cv2.polylines(img_hide, [Color_Circle['Black']["Drawing"][i]], False, 255, 20)
 
     curr_frame_time = time.time()
+
     delta_time = curr_frame_time - prev_frame_time
+
     fps = int(1 / delta_time)
+
     prev_frame_time = curr_frame_time
+
     # cv2.putText(img, "FPS : " + str(fps), (int(0.01 * w), int(0.2 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 2)
 
     if len(Color_Circle['Black']["Drawing"]) != 1:
         image_resize = cv2.resize(img_hide, (28,28))
+
         # plt.imshow(image_resize)
         # plt.savefig("test.png")
+
         image_resize = transforms(image_resize)
+
         image_resize = image_resize.to(device)
+
         image_resize = image_resize.unsqueeze(0)
+
         outputs = model(image_resize)
+
         _, predictions = torch.max(outputs, 1)
+
         # print(categories[predictions])
-        cv2.putText(img, str(categories[predictions]), (int(0.7 * w), int(0.7 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 4)
+
+        cv2.putText(img, str(categories[predictions]), (int(0.5 * w), int(0.9 * h)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 4)
         # cv2.imshow("final img", img)
+
     cv2.imshow("final image", img)
     # cv2.imshow("hidden image", img_hide)
+
     if cv2.waitKey(1) & 0xFF == ord("q"):  # "q" to quit
+
         break
     elif cv2.waitKey(1) & 0xFF == ord("c"):  # "c" to clear drawing
         for color in Color_Circle:
